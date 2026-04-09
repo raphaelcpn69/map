@@ -1,0 +1,850 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fisca+ · Carte Stratégique</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,400;0,500;0,600;0,700;1,700&display=swap" rel="stylesheet">
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0a0a0f;--bg2:#111118;--bg3:#18181f;
+  --border:#1e1e2e;--border2:#2a2a3e;
+  --text:#f0f0f5;--text2:#a0a0b8;--text3:#55556a;
+  --gold:#f59e0b;--green:#22c55e;--blind:#818cf8;--red:#ef4444;
+  --font:'DM Sans',Arial,sans-serif;
+}
+html,body{background:var(--bg);color:var(--text);font-family:var(--font);height:100%;overflow:hidden}
+#app{display:flex;flex-direction:column;height:100vh;width:100vw}
+
+.topbar{padding:9px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;background:var(--bg);flex-shrink:0;gap:10px}
+.logo{font-weight:700;font-size:17px;color:var(--text);font-style:italic;white-space:nowrap;flex-shrink:0}
+.logo em{color:var(--gold)}
+.logo-sub{font-size:10px;color:var(--text3);font-style:normal;font-weight:500;margin-left:8px;letter-spacing:.04em}
+.tb-center{display:flex;gap:7px;align-items:center;flex:1;justify-content:center}
+.stat-pill{display:flex;align-items:center;gap:5px;background:var(--bg2);border:1px solid var(--border);padding:4px 11px;border-radius:20px;font-size:11px;font-weight:600;color:var(--text2);white-space:nowrap}
+.sdot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.tb-right{display:flex;align-items:center;gap:8px;flex-shrink:0}
+.legend{display:flex;gap:12px;font-size:10px;color:var(--text3)}
+.ld{display:inline-flex;align-items:center;gap:4px}
+.ld-dot{width:7px;height:7px;border-radius:50%}
+.drive-btn{display:flex;align-items:center;gap:6px;background:var(--bg2);border:1px solid var(--border2);color:var(--text3);font-family:var(--font);font-size:10px;font-weight:600;padding:5px 11px;border-radius:20px;cursor:pointer;transition:.18s;white-space:nowrap}
+.drive-btn:hover{border-color:var(--gold);color:var(--gold)}
+.drive-btn.connected{border-color:var(--green);color:var(--green)}
+.drive-btn.syncing{border-color:var(--gold);color:var(--gold)}
+.drive-btn svg{width:12px;height:12px;fill:currentColor;flex-shrink:0}
+.save-ind{font-size:10px;color:var(--text3);transition:color .4s;white-space:nowrap}
+.save-ind.ok{color:var(--green)}
+.exp-btn{background:var(--bg2);border:1px solid var(--border2);color:var(--text3);font-family:var(--font);font-size:10px;font-weight:600;padding:5px 11px;border-radius:20px;cursor:pointer;transition:.18s;white-space:nowrap}
+.exp-btn:hover{border-color:var(--gold);color:var(--gold)}
+
+.canvas-area{flex:1;display:flex;min-height:0;overflow:hidden}
+#map{flex:1;min-width:0}
+
+.side-panel{width:0;background:var(--bg2);border-left:1px solid var(--border);overflow:hidden;transition:width .35s cubic-bezier(.4,0,.2,1);flex-shrink:0;display:flex;flex-direction:column;position:relative}
+.side-panel.open{width:292px}
+.panel-inner{width:292px;display:flex;flex-direction:column;height:100%}
+.p-scroll{flex:1;overflow-y:auto;padding:18px 16px;display:flex;flex-direction:column;gap:14px}
+.p-scroll::-webkit-scrollbar{display:none}
+
+.p-badge{font-size:9px;font-weight:700;letter-spacing:.15em;text-transform:uppercase;padding:3px 10px;border-radius:100px;width:fit-content}
+.pb-hub{background:rgba(245,158,11,.15);color:var(--gold)}
+.pb-known{background:rgba(245,158,11,.1);color:#fcd34d}
+.pb-blind{background:rgba(129,140,248,.12);color:var(--blind)}
+.p-title{font-size:15px;font-weight:700;font-style:italic;color:var(--text);line-height:1.3}
+.sec-lbl{font-size:9px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--text3);margin-bottom:6px}
+.mrow{display:flex;align-items:center;gap:8px}
+.mtrack{flex:1;height:2px;background:rgba(255,255,255,.07);border-radius:2px;overflow:hidden}
+.mfill{height:100%;border-radius:2px;transition:width .9s cubic-bezier(.4,0,.2,1)}
+.mpct{font-size:10px;color:var(--text3);min-width:28px;text-align:right}
+.st-row{display:flex;gap:6px}
+.st-btn{flex:1;padding:7px 4px;border-radius:10px;border:1px solid var(--border2);background:none;color:var(--text3);font-family:var(--font);font-size:10px;font-weight:600;cursor:pointer;text-align:center;transition:all .18s}
+.st-btn:hover{border-color:var(--border);color:var(--text2)}
+.st-btn.s-todo{background:rgba(85,85,106,.15);border-color:#55556a;color:var(--text2)}
+.st-btn.s-prog{background:rgba(245,158,11,.12);border-color:var(--gold);color:var(--gold)}
+.st-btn.s-done{background:rgba(34,197,94,.12);border-color:var(--green);color:var(--green)}
+.p-desc{font-size:11.5px;line-height:1.72;color:var(--text2)}
+.p-cta{font-size:11.5px;line-height:1.65;padding:11px 13px;border-radius:10px;border-left:2px solid}
+.cta-gold{background:rgba(245,158,11,.06);color:#fde68a;border-color:var(--gold)}
+.cta-green{background:rgba(34,197,94,.06);color:#86efac;border-color:var(--green)}
+.cta-blind{background:rgba(129,140,248,.06);color:#c7d2fe;border-color:var(--blind)}
+.no-note{font-size:11px;color:var(--text3);font-style:italic;padding:2px 0}
+.c-list{display:flex;flex-direction:column;gap:8px}
+.c-item{background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:10px 12px}
+.c-txt{font-size:12px;line-height:1.55;color:var(--text);margin-bottom:5px;word-break:break-word;white-space:pre-wrap}
+.c-meta{font-size:10px;color:var(--text3);display:flex;justify-content:space-between;align-items:center}
+.c-del{background:none;border:none;color:var(--text3);cursor:pointer;font-size:12px;padding:1px 4px;border-radius:3px;transition:color .15s;line-height:1;font-family:var(--font)}
+.c-del:hover{color:var(--red)}
+.p-footer{border-top:1px solid var(--border);padding:12px 16px;flex-shrink:0;background:var(--bg2)}
+.ci-row{display:flex;gap:7px;margin-top:6px;align-items:flex-end}
+.ci{flex:1;background:var(--bg3);border:1px solid var(--border2);border-radius:10px;padding:8px 11px;color:var(--text);font-family:var(--font);font-size:12px;resize:none;outline:none;line-height:1.5;min-height:38px;max-height:90px;overflow-y:auto}
+.ci:focus{border-color:var(--gold)}
+.ci::placeholder{color:var(--text3)}
+.c-send{background:var(--gold);border:none;border-radius:10px;width:38px;height:38px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;transition:.18s}
+.c-send:hover{background:#d97706}
+.c-send:active{transform:scale(.91)}
+.c-send svg{width:14px;height:14px;stroke:#fff;fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+.close-btn{position:absolute;top:10px;right:10px;background:rgba(255,255,255,.06);border:none;color:var(--text2);cursor:pointer;font-size:13px;padding:4px 8px;border-radius:6px;z-index:5;font-family:var(--font)}
+.close-btn:hover{background:rgba(255,255,255,.12);color:var(--text)}
+
+.inner-scale{transition:transform .2s ease;transform-box:fill-box;transform-origin:center}
+.node-wrap:hover .inner-scale{transform:scale(1.1)}
+@keyframes qp{0%,100%{opacity:.85}50%{opacity:.2}}
+.bq{animation:qp 2.8s ease-in-out infinite}
+@keyframes rp{0%,100%{opacity:1}50%{opacity:.4}}
+.ring-prog{animation:rp 2s ease-in-out infinite}
+
+.toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--bg2);border:1px solid var(--green);color:var(--green);font-family:var(--font);font-size:11px;font-weight:600;padding:7px 16px;border-radius:20px;opacity:0;transition:all .3s;z-index:300;pointer-events:none;white-space:nowrap}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.toast.gold{border-color:var(--gold);color:var(--gold)}
+.toast.err{border-color:var(--red);color:var(--red)}
+
+/* ── SETUP MODAL ── */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:500;display:flex;align-items:center;justify-content:center;padding:20px}
+.modal-overlay.hidden{display:none}
+.modal{background:var(--bg2);border:1px solid var(--border2);border-radius:18px;width:100%;max-width:480px;overflow:hidden}
+.modal-top{padding:22px 24px 18px;border-bottom:1px solid var(--border)}
+.modal-logo{font-weight:700;font-size:15px;font-style:italic;color:var(--text);margin-bottom:4px}
+.modal-logo em{color:var(--gold)}
+.modal-title{font-size:18px;font-weight:700;color:var(--text);line-height:1.3}
+.modal-sub{font-size:12px;color:var(--text3);margin-top:4px;line-height:1.5}
+.modal-body{padding:20px 24px;display:flex;flex-direction:column;gap:18px;max-height:70vh;overflow-y:auto}
+.modal-body::-webkit-scrollbar{display:none}
+.step{display:flex;gap:12px;align-items:flex-start}
+.step-num{width:24px;height:24px;border-radius:50%;background:var(--gold);color:#0a0a0f;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
+.step-content{flex:1}
+.step-title{font-size:13px;font-weight:600;color:var(--text);margin-bottom:3px}
+.step-desc{font-size:11.5px;color:var(--text2);line-height:1.6}
+.step-link{color:var(--gold);text-decoration:none;font-weight:600}
+.step-link:hover{text-decoration:underline}
+.step-code{background:var(--bg3);border:1px solid var(--border2);border-radius:6px;padding:4px 10px;font-size:11px;color:#86efac;font-family:monospace;display:inline-block;margin-top:4px;word-break:break-all}
+.modal-input-wrap{display:flex;flex-direction:column;gap:6px}
+.modal-lbl{font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--text3)}
+.modal-input{background:var(--bg3);border:1px solid var(--border2);border-radius:10px;padding:10px 14px;color:var(--text);font-family:var(--font);font-size:12px;outline:none;width:100%}
+.modal-input:focus{border-color:var(--gold)}
+.modal-input::placeholder{color:var(--text3)}
+.modal-footer{padding:16px 24px;border-top:1px solid var(--border);display:flex;gap:10px}
+.modal-btn{flex:1;padding:11px;border-radius:10px;border:none;font-family:var(--font);font-weight:700;font-size:13px;cursor:pointer;transition:.18s}
+.modal-btn.primary{background:var(--gold);color:#0a0a0f}
+.modal-btn.primary:hover{background:#d97706}
+.modal-btn.secondary{background:var(--bg3);color:var(--text2);border:1px solid var(--border2)}
+.modal-btn.secondary:hover{border-color:var(--border);color:var(--text)}
+.notice{background:rgba(245,158,11,.06);border:1px solid rgba(245,158,11,.2);border-radius:10px;padding:10px 13px;font-size:11px;color:#fde68a;line-height:1.6}
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="topbar">
+    <div class="logo">Fisca<em>+</em><span class="logo-sub">Carte Stratégique</span></div>
+    <div class="tb-center">
+      <div class="stat-pill"><span class="sdot" style="background:var(--green)"></span><span id="sMastered">0 maîtrisé</span></div>
+      <div class="stat-pill"><span class="sdot" style="background:var(--gold)"></span><span id="sInProg">0 en cours</span></div>
+      <div class="stat-pill"><span class="sdot" style="background:var(--blind)"></span><span id="sNotes">0 note</span></div>
+    </div>
+    <div class="tb-right">
+      <div class="legend">
+        <span class="ld"><span class="ld-dot" style="background:var(--gold)"></span>Maîtrisé</span>
+        <span class="ld"><span class="ld-dot" style="background:var(--blind);opacity:.7"></span>Angle mort</span>
+      </div>
+      <button class="drive-btn" id="driveBtn" onclick="handleDriveClick()">
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M6.28 3l5.72 9.9L17.72 3H6.28zm10.75.04L12 12.9l4 6.92 4.97-8.6-3.94-8.18zM2.28 13.04L7.25 21.9h9.9L12 12.9l-9.72.14zm4.97 6.86l-2-3.46 5.75-.04-3.75 3.5z"/></svg>
+        <span id="driveBtnTxt">Connecter Drive</span>
+      </button>
+      <button class="exp-btn" onclick="exportNotes()">⬇ Export</button>
+      <div class="save-ind" id="saveInd">○</div>
+    </div>
+  </div>
+  <div class="canvas-area">
+    <svg id="map" viewBox="0 0 800 520" preserveAspectRatio="xMidYMid meet"></svg>
+    <div class="side-panel" id="panel">
+      <div class="panel-inner">
+        <button class="close-btn" id="closeBtn">✕</button>
+        <div class="p-scroll" id="pScroll">
+          <div id="pBadge" class="p-badge pb-known">Zone maîtrisée</div>
+          <div id="pTitle" class="p-title"></div>
+          <div>
+            <div class="sec-lbl" id="barLbl">Priorité stratégique</div>
+            <div class="mrow">
+              <div class="mtrack"><div id="pBar" class="mfill" style="width:0%;background:var(--gold)"></div></div>
+              <div id="pPct" class="mpct">—</div>
+            </div>
+          </div>
+          <div id="stBlock">
+            <div class="sec-lbl">Ton avancement</div>
+            <div class="st-row">
+              <button class="st-btn" id="st0" onclick="setStatus('todo')">📌 À faire</button>
+              <button class="st-btn" id="st1" onclick="setStatus('prog')">🔥 En cours</button>
+              <button class="st-btn" id="st2" onclick="setStatus('done')">✅ Fait</button>
+            </div>
+          </div>
+          <div><div class="sec-lbl">Description</div><div id="pDesc" class="p-desc"></div></div>
+          <div>
+            <div id="pCtaLbl" class="sec-lbl">Connexion clé</div>
+            <div id="pCta" class="p-cta cta-gold"></div>
+          </div>
+          <div>
+            <div class="sec-lbl">Mes notes <span id="nCount" style="color:var(--gold)"></span></div>
+            <div id="cList" class="c-list"></div>
+          </div>
+        </div>
+        <div class="p-footer">
+          <div class="sec-lbl">Ajouter une note</div>
+          <div class="ci-row">
+            <textarea id="ci" class="ci" placeholder="Réflexion, action, idée… (Entrée = envoyer)"></textarea>
+            <button class="c-send" id="cSend">
+              <svg viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<!-- SETUP MODAL -->
+<div class="modal-overlay" id="setupModal">
+  <div class="modal">
+    <div class="modal-top">
+      <div class="modal-logo">Fisca<em>+</em></div>
+      <div class="modal-title">Connexion Google Drive</div>
+      <div class="modal-sub">Tes notes seront synchronisées dans ton Drive — accessibles depuis n'importe quel appareil.</div>
+    </div>
+    <div class="modal-body">
+      <div class="notice">⚡ Cette configuration se fait <strong>une seule fois</strong>. Une fois ton Client ID enregistré, la connexion est automatique à chaque ouverture.</div>
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-content">
+          <div class="step-title">Crée un projet Google Cloud</div>
+          <div class="step-desc">Va sur <a class="step-link" href="https://console.cloud.google.com" target="_blank">console.cloud.google.com</a> → clique <strong>Nouveau projet</strong> → nomme-le "Fisca+" → clique <strong>Créer</strong>.</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-content">
+          <div class="step-title">Active l'API Google Drive</div>
+          <div class="step-desc">Dans le menu → <strong>API et services</strong> → <strong>Bibliothèque</strong> → cherche "Google Drive API" → clique <strong>Activer</strong>.</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-content">
+          <div class="step-title">Configure l'écran de consentement</div>
+          <div class="step-desc">→ <strong>API et services</strong> → <strong>Écran de consentement OAuth</strong> → choisis <strong>Externe</strong> → remplis le nom de l'app (Fisca+) → <strong>Enregistrer</strong>.</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">4</div>
+        <div class="step-content">
+          <div class="step-title">Crée tes identifiants OAuth</div>
+          <div class="step-desc">→ <strong>Identifiants</strong> → <strong>+ Créer des identifiants</strong> → <strong>ID client OAuth 2.0</strong> → Type : <strong>Application Web</strong>.<br><br>Dans <strong>Origines JavaScript autorisées</strong>, ajoute l'URL exacte où ton fichier est hébergé (ex: <span class="step-code">https://monsite.com</span>). Si tu testes en local, ajoute aussi <span class="step-code">http://localhost</span>.</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">5</div>
+        <div class="step-content">
+          <div class="step-title">Copie ton Client ID ici</div>
+          <div class="step-desc">Après création, une fenêtre affiche ton <strong>ID client</strong> (se termine par <span class="step-code">.apps.googleusercontent.com</span>). Copie-le et colle-le ci-dessous.</div>
+        </div>
+      </div>
+      <div class="modal-input-wrap">
+        <div class="modal-lbl">Ton Client ID Google</div>
+        <input type="text" class="modal-input" id="clientIdInput" placeholder="123456789-abc...apps.googleusercontent.com">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="modal-btn secondary" onclick="dismissSetup()">Plus tard</button>
+      <button class="modal-btn primary" onclick="saveClientId()">Enregistrer et connecter</button>
+    </div>
+  </div>
+</div>
+<script>
+// ═══════════════════════════════════════════
+// NODES DATA
+// ═══════════════════════════════════════════
+var NODES = [
+  {id:'hub',label:'Fisca+',x:400,y:260,type:'hub',r:38,
+   title:'Fisca+',priority:100,
+   desc:"Ton application d'education financiere et fiscale gamifiee, mobile-first. Feed video TikTok-like, quiz par domaines, fiches de revision, wiki IA, streak quotidien. Le concept est rare et le marche est reel en France.",
+   cta:"Clique sur chaque noeud pour reveler ses connexions cachees, suivre ton avancement, et documenter tes reflexions. Tout est synchronise automatiquement sur Google Drive.",
+   ctaLbl:'Mode emploi'},
+  {id:'fiscal',label:'Contenu\nFiscal FR',x:400,y:110,type:'known',r:25,
+   title:'Contenu Fiscal Francais',priority:88,
+   desc:"IR, IS, TVA, PFU 30%, PEA, Assurance-vie, IFI, CEHR, SCI, dividendes, plus-values. La matiere premiere de Fisca+ et ton avantage concurrentiel central. La profondeur et la clarte du contenu fiscal sont rares sur ce marche.",
+   cta:"La fiscalite evolue a chaque PLF (Projet de Loi de Finances, en octobre). Sans systeme de mise a jour rapide du contenu, la confiance utilisateur s'erode. C'est un risque operationnel a anticiper maintenant.",
+   ctaLbl:'Point attention'},
+  {id:'ux',label:'UX &\nGamification',x:532,y:185,type:'known',r:25,
+   title:'UX Mobile & Gamification',priority:83,
+   desc:"Streaks quotidiens, XP, vies (hearts), progression en serpent avec checkpoints, animations fluides, design soigne. L'app a un niveau UX remarquable pour un produit early stage - un vrai differenciateur face aux concurrents.",
+   cta:"Prochaine etape : les social features (classements entre amis, defis communautaires) creent une boucle virale absente pour l'instant. Elles multiplieront la retention ET l'acquisition organique.",
+   ctaLbl:'Prochaine etape cle'},
+  {id:'video',label:'Video &\nEdtech',x:532,y:335,type:'known',r:24,
+   title:'Format Video & Edtech',priority:76,
+   desc:"Feed TikTok-like, SVG animes sur mesure, format court, chapitres thematiques. Tu as compris que l'attention est le nerf de la guerre en edtech mobile - et ton wiki IA renforce encore la valeur.",
+   cta:"Connexion cachee : YouTube et TikTok peuvent devenir ton moteur d'acquisition principal a CAC quasi nul. 3 a 5 extraits video courts par semaine issus de l'app suffisent pour construire un canal organique puissant.",
+   ctaLbl:'Connexion cachee'},
+  {id:'monetisation',label:'Monetisation\n& Business',x:400,y:410,type:'known',r:25,
+   title:'Monetisation & Business Model',priority:73,
+   desc:"Freemium + abonnement 6.95eu/mois, fiches premium par niveaux (9.95eu / 16.95eu / 24.95eu), publicites pour recuperer des vies. Un modele multi-revenus coherent pour une phase early.",
+   cta:"Point critique : a 6.95eu/mois avec un churn estime de 8%, ton LTV est 87eu. Ton CAC doit rester sous 29eu (ratio LTV/CAC >= 3) pour que chaque euro de marketing soit rentable. A calculer urgemment.",
+   ctaLbl:'Point critique'},
+  {id:'quiz',label:'Pedagogie\nActive',x:268,y:335,type:'known',r:24,
+   title:'Quiz & Pedagogie Active',priority:80,
+   desc:"Q&R par domaines (Fiscalite, Bourse, Crypto, Placements), fiches de revision telechargeables, apprentissage par l'erreur avec le systeme de vies. Une approche pedagogiquement solide et scientifiquement validee.",
+   cta:"Connexion IA a faible effort : un spaced repetition adaptatif - revisions automatiques au bon moment selon les erreurs passees - pourrait doubler la retention. La brique IA est deja dans l'app (Wiki Finance).",
+   ctaLbl:'Connexion IA'},
+  {id:'produits',label:'Produits\nFinanciers',x:268,y:185,type:'known',r:24,
+   title:'Produits & Marches Financiers',priority:74,
+   desc:"ETF, SCPI, PEA, CTO, Assurance-vie, livrets reglementes (LEP, LDDS), crypto, immobilier, PER. Un encyclopedique des placements francais accessibles au grand public, bien structure par niveau.",
+   cta:"Opportunite B2B sous-exploitee : ce contenu est une mine pour les neobanques et robo-advisors qui cherchent a eduquer leurs clients. Ils paieraient pour integrer ton module pedagogique dans leur onboarding.",
+   ctaLbl:'Opportunite cachee'},
+  {id:'amf',label:'Conformite\nAMF & Legal',x:400,y:32,type:'blind',r:22,
+   title:'Conformite AMF & Risque Juridique',priority:95,
+   desc:"Diffuser du contenu financier en France sans statut CIF (Conseiller en Investissements Financiers) ou sans disclaimers precis expose a des sanctions AMF. Le RGPD s'applique aux donnees d'apprentissage. C'est le risque N1 non adresse de Fisca+.",
+   cta:"Priorite absolue AVANT de scaler : consulter un avocat fintech (August Debouzy, Gide). Ajouter des disclaimers visibles partout : 'Contenu educatif uniquement - pas un conseil en investissement'. Un signalement AMF peut stopper l'app.",
+   ctaLbl:'Action immediate'},
+  {id:'growth',label:'Growth &\nAcquisition',x:678,y:88,type:'blind',r:22,
+   title:'Growth & Acquisition Organique',priority:86,
+   desc:"L'app peut etre parfaite - sans strategie d'acquisition structuree, elle reste invisible. ASO (App Store Optimization), SEO YouTube / TikTok / Google, referral program gamifie, partenariats avec influenceurs finance personnelle.",
+   cta:"Premiere action a ROI rapide : l'ASO (mots-cles 'fiscalite', 'impots', 'finance perso' sur App Store et Google Play). Puis creer 10 Reels/TikToks extraits de tes meilleures lecons. CAC = 0, impact potentiel tres fort.",
+   ctaLbl:'Comment demarrer'},
+  {id:'analytics',label:'Analytics &\nRetention',x:722,y:260,type:'blind',r:22,
+   title:'Analytics & Metriques de Retention',priority:85,
+   desc:"Sans donnees, tu pilotes a l'aveugle. DAU/MAU ratio, retention J1/J7/J30, cohort analysis par canal, funnel freemium vers premium, churn prediction. Quels modules retiennent le mieux ? Quel contenu convertit reellement ?",
+   cta:"Implementer Mixpanel ou Amplitude (gratuit jusqu'a 1000 users/mois). Definir 3 metriques cles cette semaine : retention J7, conversion free vers payant, NPS mensuel. Ce seul dashboard change toutes tes decisions.",
+   ctaLbl:'Comment demarrer'},
+  {id:'b2b',label:'Distribution\nB2B',x:648,y:437,type:'blind',r:22,
+   title:'Distribution B2B & Partenariats Pros',priority:79,
+   desc:"Cabinets comptables, CGP, ecoles de commerce, entreprises pour la formation de leurs equipes - tous cherchent des outils pedagogiques financiers modernes. Ce canal est peu competitif et a tres haute valeur unitaire.",
+   cta:"Creer une offre 'Fisca+ Teams' : licence 99eu/mois pour 10 comptes. Contacter 10 cabinets comptables locaux via LinkedIn cette semaine. Un seul deal = 14x l'ARPU d'un abonne B2C. Rapport effort/revenus imbattable.",
+   ctaLbl:'Comment demarrer'},
+  {id:'uniteco',label:'Economie\nUnitaire',x:400,y:492,type:'blind',r:22,
+   title:'Economie Unitaire & KPIs SaaS',priority:91,
+   desc:"LTV, CAC, Payback Period, MRR/ARR, Net Revenue Churn. Sans ces chiffres precis et mis a jour chaque mois, impossible de savoir si Fisca+ est scalable - et impossible de convaincre un investisseur serieux.",
+   cta:"Calcul immediat : ARPU 6.95eu divise par churn rate mensuel = LTV. LTV divise par 3 = CAC max acceptable. Si tu ne connais pas encore ton churn, c'est ta toute premiere priorite analytics. Ce seul chiffre oriente tout.",
+   ctaLbl:'Action immediate'},
+  {id:'communaute',label:'Communaute\n& Viralite',x:152,y:437,type:'blind',r:22,
+   title:'Communaute & Contenu Utilisateur',priority:66,
+   desc:"Forum d'entraide, classements publics, defis entre utilisateurs, contenu partage par les experts - la communaute cree un switching cost emotionnel fort et genere une acquisition virale difficile a repliquer.",
+   cta:"Commencer simple et gratuit : un Discord ou groupe WhatsApp pour tes 100 premiers utilisateurs actifs. Leur feedback vaut de l'or, leur engagement credibilise l'app. En faire des ambassadeurs des maintenant.",
+   ctaLbl:'Comment demarrer'},
+  {id:'expansion',label:'Expansion\nFrancophone',x:78,y:260,type:'blind',r:22,
+   title:'Expansion Geographique Francophone',priority:62,
+   desc:"Belgique, Suisse, Luxembourg, Quebec - des marches francophones avec des fiscalites similaires mais sans acteur d'education financiere gamifiee dominant. Moins competitif que la France avec une barriere linguistique naturelle.",
+   cta:"Test minimal : adapter 20% du contenu pour la Belgique (precompte mobilier, TVA belge). Lancer 200eu de pubs Facebook ciblees Bruxelles. 2 semaines de travail pour valider un marche entier.",
+   ctaLbl:'Test rapide possible'},
+  {id:'ia',label:'IA &\nPersonnalisation',x:122,y:88,type:'blind',r:22,
+   title:'IA & Parcours Adaptatif',priority:74,
+   desc:"Parcours adaptatif base sur les erreurs de l'utilisateur, coach IA temps reel (tu as deja un Wiki Finance IA !), recommandations personnalisees selon le profil et les objectifs financiers declares.",
+   cta:"La brique IA existe deja dans l'app. Etape suivante a faible effort : utiliser les donnees d'erreurs de quiz pour declencher automatiquement les fiches pertinentes. Fort impact pedagogique, code minimal.",
+   ctaLbl:'Prochaine etape logique'}
+];
+
+var EDGES = [
+  {a:'hub',b:'fiscal'},{a:'hub',b:'ux'},{a:'hub',b:'video'},
+  {a:'hub',b:'monetisation'},{a:'hub',b:'quiz'},{a:'hub',b:'produits'},
+  {a:'fiscal',b:'quiz'},{a:'fiscal',b:'produits'},
+  {a:'ux',b:'video'},{a:'ux',b:'quiz'},
+  {a:'video',b:'monetisation'},{a:'produits',b:'fiscal'},
+  {a:'fiscal',b:'amf',bl:1},{a:'fiscal',b:'expansion',bl:1},
+  {a:'ux',b:'growth',bl:1},{a:'ux',b:'communaute',bl:1},{a:'ux',b:'analytics',bl:1},
+  {a:'video',b:'growth',bl:1},{a:'video',b:'ia',bl:1},
+  {a:'monetisation',b:'uniteco',bl:1},{a:'monetisation',b:'b2b',bl:1},
+  {a:'quiz',b:'ia',bl:1},{a:'quiz',b:'analytics',bl:1},
+  {a:'produits',b:'b2b',bl:1},{a:'hub',b:'amf',bl:1}
+];
+
+// ═══════════════════════════════════════════
+// STORAGE — localStorage + Google Drive
+// ═══════════════════════════════════════════
+var SK = 'fiscaplus_map_v3';
+var D = {statuses:{},comments:{},log:[],meta:{created:new Date().toISOString(),saved:null,actions:0}};
+
+function loadLocal(){
+  try{
+    var s = localStorage.getItem(SK);
+    if(s){ var p = JSON.parse(s); D = Object.assign(D,p); }
+  }catch(e){ console.warn('Load error',e); }
+}
+
+function saveLocal(){
+  try{
+    D.meta.saved = new Date().toISOString();
+    localStorage.setItem(SK, JSON.stringify(D));
+  }catch(e){ console.warn('Save local error',e); }
+}
+
+function logAction(action){
+  D.meta.actions = (D.meta.actions||0)+1;
+  if(action){
+    D.log.push({ts:new Date().toISOString(),action:action});
+    if(D.log.length>200) D.log = D.log.slice(-100);
+  }
+}
+
+// ═══════════════════════════════════════════
+// GOOGLE DRIVE INTEGRATION
+// ═══════════════════════════════════════════
+var DRIVE_API    = 'https://www.googleapis.com/drive/v3';
+var DRIVE_UPLOAD = 'https://www.googleapis.com/upload/drive/v3';
+var DRIVE_SCOPE  = 'https://www.googleapis.com/auth/drive.file';
+var DRIVE_FILE   = 'fiscaplus_carte_strategique.json';
+
+var _clientId    = localStorage.getItem('fp_client_id') || '';
+var _accessToken = null;
+var _driveFileId = localStorage.getItem('fp_drive_file_id') || null;
+var _tokenClient = null;
+var _syncTimer   = null;
+var _driveReady  = false;
+
+function initTokenClient(){
+  if(!_clientId || !window.google) return;
+  try{
+    _tokenClient = google.accounts.oauth2.initTokenClient({
+      client_id: _clientId,
+      scope: DRIVE_SCOPE,
+      callback: function(resp){
+        if(resp.error){ showToast('Erreur connexion Google','err'); return; }
+        _accessToken = resp.access_token;
+        _driveReady = true;
+        updateDriveBtn('connected');
+        showToast('Google Drive connecte !','gold');
+        driveLoad();
+      }
+    });
+  }catch(e){ console.warn('TokenClient init error',e); }
+}
+
+function handleDriveClick(){
+  if(_driveReady){
+    showToast('Drive deja connecte - donnees synchronisees automatiquement','gold');
+    return;
+  }
+  if(!_clientId){
+    document.getElementById('setupModal').classList.remove('hidden');
+    return;
+  }
+  connectDrive();
+}
+
+function connectDrive(){
+  if(!window.google){ showToast('SDK Google en cours de chargement...'); setTimeout(connectDrive,1500); return; }
+  if(!_tokenClient) initTokenClient();
+  if(!_tokenClient){ showToast('Erreur init SDK Google','err'); return; }
+  _tokenClient.requestAccessToken({prompt:''});
+}
+
+function updateDriveBtn(state){
+  var btn = document.getElementById('driveBtn');
+  var txt = document.getElementById('driveBtnTxt');
+  btn.className = 'drive-btn ' + (state||'');
+  if(state==='connected'){ txt.textContent = 'Drive connecte'; }
+  else if(state==='syncing'){ txt.textContent = 'Synchronisation...'; }
+  else{ txt.textContent = 'Connecter Drive'; }
+}
+
+function scheduleDriveSync(){
+  if(!_driveReady) return;
+  clearTimeout(_syncTimer);
+  _syncTimer = setTimeout(driveSave, 1500);
+  var ind = document.getElementById('saveInd');
+  ind.textContent = '○ Non sauvegarde';
+  ind.classList.remove('ok');
+}
+
+async function driveSave(){
+  if(!_accessToken) return;
+  updateDriveBtn('syncing');
+  var content = JSON.stringify(D);
+  var boundary = 'fp_boundary_' + Date.now();
+  var body = '--'+boundary+'\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n';
+  var meta = _driveFileId ? '{}' : JSON.stringify({name:DRIVE_FILE,mimeType:'application/json'});
+  body += meta + '\r\n--'+boundary+'\r\nContent-Type: application/json\r\n\r\n' + content + '\r\n--'+boundary+'--';
+
+  var url, method;
+  if(_driveFileId){
+    url = DRIVE_UPLOAD+'/files/'+_driveFileId+'?uploadType=multipart';
+    method = 'PATCH';
+  } else {
+    url = DRIVE_UPLOAD+'/files?uploadType=multipart';
+    method = 'POST';
+  }
+
+  try{
+    var res = await fetch(url,{
+      method: method,
+      headers:{
+        'Authorization':'Bearer '+_accessToken,
+        'Content-Type':'multipart/related; boundary='+boundary
+      },
+      body: body
+    });
+    if(res.status===401){ _accessToken=null; _driveReady=false; updateDriveBtn(''); showToast('Session expiree - reconnecte Drive','err'); return; }
+    if(!res.ok){ throw new Error('HTTP '+res.status); }
+    var data = await res.json();
+    if(!_driveFileId && data.id){
+      _driveFileId = data.id;
+      localStorage.setItem('fp_drive_file_id', _driveFileId);
+    }
+    updateDriveBtn('connected');
+    var ind = document.getElementById('saveInd');
+    ind.textContent = 'Drive synchro';
+    ind.classList.add('ok');
+  }catch(e){
+    console.warn('Drive save error',e);
+    updateDriveBtn('connected');
+    var ind2 = document.getElementById('saveInd');
+    ind2.textContent = 'Local seulement';
+    showToast('Erreur sync Drive - sauvegarde locale OK','err');
+  }
+}
+
+async function driveLoad(){
+  if(!_accessToken) return;
+  var fileId = _driveFileId;
+  if(!fileId){
+    try{
+      var res = await fetch(DRIVE_API+'/files?q=name%3D%27'+encodeURIComponent(DRIVE_FILE)+'%27+and+trashed%3Dfalse&fields=files(id,modifiedTime)',{
+        headers:{'Authorization':'Bearer '+_accessToken}
+      });
+      var data = await res.json();
+      if(data.files && data.files.length > 0){
+        fileId = data.files[0].id;
+        _driveFileId = fileId;
+        localStorage.setItem('fp_drive_file_id', fileId);
+      }
+    }catch(e){ console.warn('Drive search error',e); }
+  }
+
+  if(fileId){
+    try{
+      var res2 = await fetch(DRIVE_API+'/files/'+fileId+'?alt=media',{
+        headers:{'Authorization':'Bearer '+_accessToken}
+      });
+      if(res2.ok){
+        var remote = await res2.json();
+        D = Object.assign(D, remote);
+        saveLocal();
+        updateAllNodes();
+        updateStats();
+        var ind = document.getElementById('saveInd');
+        ind.textContent = 'Drive synchro';
+        ind.classList.add('ok');
+        showToast('Donnees chargees depuis Drive','gold');
+      }
+    }catch(e){ console.warn('Drive load error',e); }
+  }
+}
+
+// Combined save
+function saveAll(action){
+  logAction(action);
+  saveLocal();
+  scheduleDriveSync();
+}
+
+// ═══════════════════════════════════════════
+// SETUP MODAL
+// ═══════════════════════════════════════════
+function saveClientId(){
+  var val = document.getElementById('clientIdInput').value.trim();
+  if(!val){ showToast('Colle ton Client ID','err'); return; }
+  _clientId = val;
+  localStorage.setItem('fp_client_id', _clientId);
+  document.getElementById('setupModal').classList.add('hidden');
+  connectDrive();
+}
+function dismissSetup(){
+  document.getElementById('setupModal').classList.add('hidden');
+}
+
+// ═══════════════════════════════════════════
+// SVG RENDERING
+// ═══════════════════════════════════════════
+var NS = 'http://www.w3.org/2000/svg';
+var svgEl = document.getElementById('map');
+var nm = {};
+NODES.forEach(function(n){ nm[n.id]=n; });
+var refs = {};
+
+function mk(tag,attrs){
+  var el = document.createElementNS(NS,tag);
+  if(attrs){ Object.keys(attrs).forEach(function(k){ el.setAttribute(k,attrs[k]); }); }
+  return el;
+}
+function mkT(content,attrs){
+  var t = mk('text',attrs); t.textContent=content; return t;
+}
+
+function buildDefs(){
+  var defs = mk('defs');
+  function addFilter(id,blur){
+    var f=mk('filter',{id:id,x:'-80%',y:'-80%',width:'260%',height:'260%'});
+    var b=mk('feGaussianBlur',{in:'SourceGraphic',stdDeviation:blur,result:'b'});
+    var m=mk('feMerge'); m.appendChild(mk('feMergeNode',{in:'b'})); m.appendChild(mk('feMergeNode',{in:'SourceGraphic'}));
+    f.appendChild(b); f.appendChild(m); defs.appendChild(f);
+  }
+  addFilter('fh','11'); addFilter('fk','5'); addFilter('fb','3');
+  var hubG=mk('radialGradient',{id:'hubG',cx:'50%',cy:'50%',r:'50%'});
+  var s1=mk('stop',{offset:'0%','stop-color':'#fff7d6'});
+  var s2=mk('stop',{offset:'100%','stop-color':'#f59e0b'});
+  hubG.appendChild(s1); hubG.appendChild(s2); defs.appendChild(hubG);
+  var ambG=mk('radialGradient',{id:'ambG',cx:'50%',cy:'50%',r:'50%'});
+  var a1=mk('stop',{offset:'0%','stop-color':'rgba(245,158,11,0.09)'});
+  var a2=mk('stop',{offset:'100%','stop-color':'rgba(245,158,11,0)'});
+  ambG.appendChild(a1); ambG.appendChild(a2); defs.appendChild(ambG);
+  svgEl.appendChild(defs);
+}
+
+function renderStars(){
+  var g=mk('g');
+  for(var i=0;i<72;i++){
+    g.appendChild(mk('circle',{cx:(Math.random()*800).toFixed(1),cy:(Math.random()*520).toFixed(1),r:(Math.random()*1.2).toFixed(2),fill:'white',opacity:(Math.random()*.15+.03).toFixed(2)}));
+  }
+  svgEl.appendChild(g);
+}
+
+function renderEdges(){
+  var g=mk('g');
+  EDGES.forEach(function(ed){
+    var a=nm[ed.a],b=nm[ed.b];
+    g.appendChild(mk('line',{x1:a.x,y1:a.y,x2:b.x,y2:b.y,
+      stroke:ed.bl?'rgba(129,140,248,0.22)':'rgba(245,158,11,0.2)',
+      'stroke-width':ed.bl?'1':'1.3','stroke-dasharray':ed.bl?'4,6':'none'}));
+  });
+  svgEl.appendChild(g);
+}
+
+function renderNodes(){
+  svgEl.appendChild(mk('ellipse',{cx:400,cy:260,rx:148,ry:122,fill:'url(#ambG)'}));
+  var g=mk('g');
+  NODES.forEach(function(n){
+    var outer=mk('g',{transform:'translate('+n.x+','+n.y+')'});
+    outer.classList.add('node-wrap');
+    outer.style.cursor='pointer';
+    var inner=mk('g'); inner.classList.add('inner-scale');
+    if(n.type==='hub'){
+      inner.appendChild(mk('circle',{r:n.r+22,fill:'rgba(245,158,11,0.07)'}));
+      inner.appendChild(mk('circle',{r:n.r+9,fill:'none',stroke:'rgba(245,158,11,0.28)','stroke-width':'1.5'}));
+      inner.appendChild(mk('circle',{r:n.r,fill:'url(#hubG)',filter:'url(#fh)'}));
+      inner.appendChild(mkT('Fisca+',{'text-anchor':'middle',y:'4',fill:'#0a0a0f','font-family':'DM Sans,Arial','font-weight':'700','font-size':'13','font-style':'italic'}));
+      inner.appendChild(mkT('CARTE STRAT.',{'text-anchor':'middle',y:'15',fill:'rgba(10,10,15,0.5)','font-family':'DM Sans,Arial','font-weight':'600','font-size':'7','letter-spacing':'0.07em'}));
+    } else if(n.type==='known'){
+      inner.appendChild(mk('circle',{r:n.r+13,fill:'rgba(245,158,11,0.04)'}));
+      inner.appendChild(mk('circle',{r:n.r,fill:'rgba(245,158,11,0.1)',stroke:'#f59e0b','stroke-width':'1.8',filter:'url(#fk)'}));
+      inner.appendChild(mk('circle',{r:'3.5',fill:'#f59e0b'}));
+      n.label.split('\n').forEach(function(line,i){
+        inner.appendChild(mkT(line,{'text-anchor':'middle',y:n.r+14+(i*12),fill:'#a0a0b8','font-family':'DM Sans,Arial','font-weight':'600','font-size':'9.5'}));
+      });
+    } else {
+      inner.appendChild(mk('circle',{r:n.r+14,fill:'rgba(79,70,229,0.04)'}));
+      inner.appendChild(mk('circle',{r:n.r,fill:'rgba(79,70,229,0.2)',stroke:'#818cf8','stroke-width':'1.2','stroke-dasharray':'3,3',opacity:'0.8',filter:'url(#fb)'}));
+      var q=mkT('?',{'text-anchor':'middle',y:'5',fill:'#f59e0b','font-family':'DM Sans,Arial','font-weight':'700','font-size':'14',opacity:'0.95'});
+      q.classList.add('bq'); inner.appendChild(q);
+      n.label.split('\n').forEach(function(line,i){
+        inner.appendChild(mkT(line,{'text-anchor':'middle',y:n.r+13+(i*11),fill:'#334155','font-family':'DM Sans,Arial','font-weight':'600','font-size':'9'}));
+      });
+    }
+    var sring=mk('circle',{r:n.r+6,fill:'none','stroke-width':'2.5',opacity:'0','pointer-events':'none'});
+    inner.appendChild(sring);
+    var bg=mk('g',{transform:'translate('+(n.r-1)+','+(-(n.r-1))+')',opacity:'0','pointer-events':'none'});
+    bg.appendChild(mk('circle',{r:'7.5',fill:'#f59e0b'}));
+    var bt=mkT('0',{'text-anchor':'middle',y:'4',fill:'#0a0a0f','font-family':'DM Sans,Arial','font-weight':'700','font-size':'8'});
+    bg.appendChild(bt); inner.appendChild(bg);
+    refs[n.id]={sring:sring,bg:bg,bt:bt};
+    outer.appendChild(mk('circle',{r:n.r+18,fill:'transparent'}));
+    outer.appendChild(inner);
+    outer.addEventListener('click',(function(node){ return function(){ openPanel(node); }; })(n));
+    g.appendChild(outer);
+  });
+  g.appendChild(mkT('Clique sur un noeud pour explorer | Notes synchronisees sur Google Drive',{x:'400',y:'513','text-anchor':'middle',fill:'#222232','font-family':'DM Sans,Arial','font-size':'9.5','letter-spacing':'0.06em'}));
+  svgEl.appendChild(g);
+}
+
+// ═══════════════════════════════════════════
+// NODE VISUAL UPDATE
+// ═══════════════════════════════════════════
+function updateNode(id){
+  var r=refs[id]; if(!r)return;
+  var s=D.statuses[id]||'todo';
+  var cnt=(D.comments[id]||[]).length;
+  if(s==='prog'){ r.sring.setAttribute('stroke','#f59e0b'); r.sring.setAttribute('stroke-dasharray','5,3'); r.sring.setAttribute('opacity','1'); r.sring.classList.add('ring-prog'); }
+  else if(s==='done'){ r.sring.setAttribute('stroke','#22c55e'); r.sring.setAttribute('stroke-dasharray','none'); r.sring.setAttribute('opacity','1'); r.sring.classList.remove('ring-prog'); }
+  else { r.sring.setAttribute('opacity','0'); r.sring.classList.remove('ring-prog'); }
+  if(cnt>0){ r.bg.setAttribute('opacity','1'); r.bt.textContent=cnt>9?'9+':String(cnt); }
+  else { r.bg.setAttribute('opacity','0'); }
+}
+function updateAllNodes(){ NODES.forEach(function(n){ updateNode(n.id); }); }
+function updateStats(){
+  var m=NODES.filter(function(n){return D.statuses[n.id]==='done';}).length;
+  var p=NODES.filter(function(n){return D.statuses[n.id]==='prog';}).length;
+  var nt=Object.keys(D.comments).reduce(function(a,k){return a+(D.comments[k]||[]).length;},0);
+  document.getElementById('sMastered').textContent=m+' maitrise'+(m>1?'s':'');
+  document.getElementById('sInProg').textContent=p+' en cours';
+  document.getElementById('sNotes').textContent=nt+' note'+(nt>1?'s':'');
+}
+
+// ═══════════════════════════════════════════
+// PANEL
+// ═══════════════════════════════════════════
+var cur=null;
+function openPanel(n){
+  cur=n;
+  document.getElementById('panel').classList.add('open');
+  var badge=document.getElementById('pBadge');
+  if(n.type==='hub'){badge.className='p-badge pb-hub';badge.textContent='Hub central';}
+  else if(n.type==='known'){badge.className='p-badge pb-known';badge.textContent='Zone maitrisee';}
+  else{badge.className='p-badge pb-blind';badge.textContent='Angle mort';}
+  document.getElementById('pTitle').textContent=n.title;
+  var bar=document.getElementById('pBar');
+  bar.style.background=n.type==='blind'?'#818cf8':'#f59e0b';
+  bar.style.transition='none'; bar.style.width='0%';
+  document.getElementById('pPct').textContent=n.priority+'%';
+  document.getElementById('barLbl').textContent=n.type==='known'?'Maturite du domaine':'Priorite strategique';
+  requestAnimationFrame(function(){ requestAnimationFrame(function(){ bar.style.transition='width .9s cubic-bezier(.4,0,.2,1)'; bar.style.width=n.priority+'%'; }); });
+  document.getElementById('stBlock').style.display=n.type==='hub'?'none':'';
+  if(n.type!=='hub') renderStBtns(n.id);
+  document.getElementById('pDesc').textContent=n.desc;
+  var ctaEl=document.getElementById('pCta');
+  ctaEl.textContent=n.cta;
+  ctaEl.className='p-cta '+(n.type==='blind'?'cta-blind':n.type==='hub'?'cta-gold':'cta-green');
+  document.getElementById('pCtaLbl').textContent=n.ctaLbl||'Connexion cle';
+  renderComments(n.id);
+  document.getElementById('ci').value='';
+  document.getElementById('pScroll').scrollTop=0;
+  saveAll('open:'+n.id);
+}
+function closePanel(){ document.getElementById('panel').classList.remove('open'); cur=null; }
+
+// ═══════════════════════════════════════════
+// STATUS
+// ═══════════════════════════════════════════
+function setStatus(s){
+  if(!cur)return;
+  D.statuses[cur.id]=s;
+  renderStBtns(cur.id); updateNode(cur.id); updateStats();
+  saveAll('status:'+cur.id+':'+s);
+  var msgs={todo:'Remis a faire',prog:'En cours !',done:'Marque Maitrise !'};
+  showToast(msgs[s],s==='done'?'gold':'');
+}
+function renderStBtns(id){
+  var s=D.statuses[id]||'todo';
+  var m={st0:'todo',st1:'prog',st2:'done'};
+  var c={todo:'s-todo',prog:'s-prog',done:'s-done'};
+  Object.keys(m).forEach(function(bid){ var val=m[bid]; var b=document.getElementById(bid); b.className='st-btn'+(s===val?' '+c[val]:''); });
+}
+
+// ═══════════════════════════════════════════
+// COMMENTS
+// ═══════════════════════════════════════════
+function addComment(){
+  if(!cur)return;
+  var input=document.getElementById('ci');
+  var text=input.value.trim(); if(!text)return;
+  if(!D.comments[cur.id]) D.comments[cur.id]=[];
+  D.comments[cur.id].push({id:Date.now().toString(36)+Math.random().toString(36).slice(2,5),text:text,ts:new Date().toISOString()});
+  input.value='';
+  renderComments(cur.id); updateNode(cur.id); updateStats();
+  saveAll('note:'+cur.id);
+  showToast('Note ajoutee');
+  setTimeout(function(){ var ps=document.getElementById('pScroll'); ps.scrollTop=ps.scrollHeight; },80);
+}
+function delComment(nid,cid){
+  if(!D.comments[nid])return;
+  D.comments[nid]=D.comments[nid].filter(function(c){return c.id!==cid;});
+  renderComments(nid); updateNode(nid); updateStats();
+  saveAll('del:'+nid);
+}
+function renderComments(nid){
+  var list=document.getElementById('cList');
+  var nc=document.getElementById('nCount');
+  var coms=D.comments[nid]||[];
+  list.innerHTML='';
+  nc.textContent=coms.length>0?'('+coms.length+')':'';
+  if(!coms.length){
+    var el=document.createElement('div'); el.className='no-note';
+    el.textContent='Aucune note - ajoute ta premiere reflexion ci-dessous.';
+    list.appendChild(el); return;
+  }
+  coms.forEach(function(c){
+    var item=document.createElement('div'); item.className='c-item';
+    var t=document.createElement('div'); t.className='c-txt'; t.textContent=c.text;
+    var m=document.createElement('div'); m.className='c-meta';
+    var d=document.createElement('span'); d.textContent=fmtDate(c.ts);
+    var del=document.createElement('button'); del.className='c-del'; del.textContent='x';
+    del.onclick=(function(nodeId,commentId){return function(){delComment(nodeId,commentId);};})(nid,c.id);
+    m.appendChild(d); m.appendChild(del);
+    item.appendChild(t); item.appendChild(m);
+    list.appendChild(item);
+  });
+}
+function fmtDate(iso){
+  try{ var d=new Date(iso); return d.toLocaleDateString('fr-FR',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}); }
+  catch(e){ return ''; }
+}
+
+// ═══════════════════════════════════════════
+// TOAST
+// ═══════════════════════════════════════════
+var _tt=null;
+function showToast(msg,type){
+  var t=document.getElementById('toast');
+  t.textContent=msg;
+  t.className='toast show'+(type?' '+type:'');
+  clearTimeout(_tt);
+  _tt=setTimeout(function(){t.classList.remove('show');},2400);
+}
+
+// ═══════════════════════════════════════════
+// EXPORT
+// ═══════════════════════════════════════════
+function exportNotes(){
+  var sL={todo:'A faire',prog:'En cours',done:'Maitrise'};
+  var out='# Fisca+ - Notes Strategiques\nExporte le '+new Date().toLocaleDateString('fr-FR',{weekday:'long',year:'numeric',month:'long',day:'numeric'})+'\n\n';
+  var has=false;
+  NODES.forEach(function(n){
+    var coms=D.comments[n.id]||[]; var s=D.statuses[n.id]||'todo';
+    if(coms.length>0||s!=='todo'){
+      has=true;
+      out+='## '+n.title+'\nType: '+(n.type==='blind'?'Angle mort':'Zone maitrisee')+' | Statut: '+sL[s]+' | Priorite: '+n.priority+'%\n';
+      if(coms.length){ out+='Notes:\n'; coms.forEach(function(c){out+='  - ['+fmtDate(c.ts)+'] '+c.text+'\n';}); }
+      out+='\n';
+    }
+  });
+  if(!has) out+='Aucune note renseignee pour le moment.\n';
+  out+='---\nActions enregistrees: '+(D.meta.actions||0)+'\n';
+  var blob=new Blob([out],{type:'text/plain;charset=utf-8'});
+  var url=URL.createObjectURL(blob);
+  var a=document.createElement('a'); a.href=url; a.download='fiscaplus_strategie_'+new Date().toISOString().slice(0,10)+'.txt';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+  showToast('Export telecharge','gold');
+}
+
+// ═══════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════
+document.getElementById('closeBtn').addEventListener('click',closePanel);
+document.getElementById('cSend').addEventListener('click',addComment);
+document.getElementById('ci').addEventListener('keydown',function(ev){ if(ev.key==='Enter'&&!ev.shiftKey){ev.preventDefault();addComment();} });
+
+loadLocal();
+buildDefs();
+renderStars();
+renderEdges();
+renderNodes();
+updateAllNodes();
+updateStats();
+
+// Auto-connect Drive if client ID already saved
+if(_clientId){
+  window.addEventListener('load',function(){
+    setTimeout(function(){
+      if(window.google){ initTokenClient(); connectDrive(); }
+      else { setTimeout(function(){ if(window.google){ initTokenClient(); connectDrive(); } },2000); }
+    },1000);
+  });
+}
+</script>
+</body>
+</html>
